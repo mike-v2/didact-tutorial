@@ -4,12 +4,12 @@ const RFS = {
 }
 
 type Fiber = {
-  type?: string;
+  type: string;
   props: {
     [key: string]: any;
-    children: (Fiber | string)[];
+    children: Fiber[];
   };
-  domNode: HTMLElement | Text | null;
+  domNode?: HTMLElement | Text | null;
   parent?: Fiber;
   sibling?: Fiber;
   firstChild?: Fiber;
@@ -17,7 +17,7 @@ type Fiber = {
 
 
 // use spread operator on children so that returned object always has children property
-function createElement(type, props, ...children) {
+function createElement(type: string, props?: Record<string, any>, ...children: Fiber[]): Fiber {
   return {
     type,
     props: {
@@ -28,7 +28,7 @@ function createElement(type, props, ...children) {
 }
 
 // children that are primitives instead of nodes (objects)
-function createTextElement(text) {
+function createTextElement(text: string): Fiber {
   return {
     type: 'TEXT_ELEMENT',
     props: {
@@ -38,15 +38,16 @@ function createTextElement(text) {
   }
 }
 
-function createDomNode(fiber) {
+function createDomNode(fiber: Fiber): HTMLElement | Text {
   const fiberDomNode = fiber.type === 'TEXT_ELEMENT' ? document.createTextNode('') : document.createElement(fiber.type);
-  Object.keys(fiber.props).filter(key => key !== 'children').forEach(key => fiberDomNode[key] = fiber.props[key]);
+  Object.keys(fiber.props).filter(key => key !== 'children').forEach(key => (fiberDomNode as any)[key] = fiber.props[key]);
 
   return fiberDomNode;
 }
 
 function render(element: Fiber, container: HTMLElement) {
   nextUnitOfWork = {
+    type: 'ROOT', // type is not needed since it's already rendered, but we include a special type here to conform to Fiber type
     domNode: container,
     props: {
       children: [element]
@@ -54,7 +55,7 @@ function render(element: Fiber, container: HTMLElement) {
   }
 }
 
-function workLoop(deadline) {
+function workLoop(deadline: IdleDeadline) {
   let shouldYield = false;
   while (nextUnitOfWork && !shouldYield) {
     nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
@@ -63,17 +64,17 @@ function workLoop(deadline) {
   requestIdleCallback(workLoop);
 }
 
-function performUnitOfWork(fiber) {
+function performUnitOfWork(fiber: Fiber): Fiber | null {
   // create DOM node for fiber and append to DOM parent
   if (!fiber.domNode) fiber.domNode = createDomNode(fiber);
-  if (fiber.parent) fiber.parent.domNode.appendChild(fiber.domNode);
+  if (fiber.parent) fiber.parent.domNode!.appendChild(fiber.domNode!);
 
   // create fiber for each child
   let prevSibling: Fiber | null = null;
   for (let i = 0; i < fiber.props.children.length; i++) {
     const element = fiber.props.children[i];
 
-    const newFiber = {
+    const newFiber: Fiber = {
       type: element.type,
       props: element.props,
       parent: fiber,
@@ -98,8 +99,11 @@ function performUnitOfWork(fiber) {
   while (nextFiber) {
     if (nextFiber.sibling) return nextFiber.sibling;
 
+    if (!nextFiber.parent) break;
     nextFiber = nextFiber.parent;
   }
+
+  return null;
 }
 
 let nextUnitOfWork: Fiber | null = null;

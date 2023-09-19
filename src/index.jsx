@@ -1,6 +1,6 @@
 /** @jsx RFS.createElement */
 
-import * as RFS from '../utils/RFS';
+import * as RFS from './utils/RFS';
 import App from './App';
 
 const element = (
