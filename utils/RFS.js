@@ -1,10 +1,16 @@
+const RFS = {
+  createElement,
+  render,
+}
+
 // use spread operator on children so that returned object always has children property
 function createElement(type, props, ...children) {
+  console.log('creating element with type: ', type);
   return {
     type,
     props: {
       ...props,
-      children
+      children: children.map(child => typeof child === 'object' ? child : createTextElement(child))
     }
   }
 }
@@ -21,6 +27,8 @@ function createTextElement(text) {
 }
 
 function render(element, container) {
+  console.log('creating element: ', element);
+
   const elementDOM = element.type === 'TEXT_ELEMENT' ? document.createTextNode('') : document.createElement(element.type);
 
   Object.keys(element.props).filter(key => key !== 'children').forEach(key => elementDOM[key] = element.props[key]);
@@ -32,25 +40,4 @@ function render(element, container) {
   container.appendChild(elementDOM);
 }
 
-const RFS = {
-  createElement,
-  render,
-}
-
-/* const element = RFS.createElement(
-  'div',
-  { id: 'title' },
-  RFS.createElement('a', null, 'Hello React!'),
-  RFS.createElement('b')
-); */
-
-// when babel transpiles the JSX, it will use the function we define
-/** @jsx RFS.createElement */
-const element = (
-  <div id='title'>
-    <a>Hello React!</a>
-    <b />
-  </div>
-)
-const container = document.getElementById('root');
-RFS.render(element, container); 
+export { render, createElement }
