@@ -3,6 +3,19 @@ const RFS = {
   render,
 }
 
+type Fiber = {
+  type?: string;
+  props: {
+    [key: string]: any;
+    children: (Fiber | string)[];
+  };
+  domNode: HTMLElement | Text | null;
+  parent?: Fiber;
+  sibling?: Fiber;
+  firstChild?: Fiber;
+};
+
+
 // use spread operator on children so that returned object always has children property
 function createElement(type, props, ...children) {
   return {
@@ -32,7 +45,7 @@ function createDomNode(fiber) {
   return fiberDomNode;
 }
 
-function render(element, container) {
+function render(element: Fiber, container: HTMLElement) {
   nextUnitOfWork = {
     domNode: container,
     props: {
@@ -56,7 +69,7 @@ function performUnitOfWork(fiber) {
   if (fiber.parent) fiber.parent.domNode.appendChild(fiber.domNode);
 
   // create fiber for each child
-  let prevSibling = null;
+  let prevSibling: Fiber | null = null;
   for (let i = 0; i < fiber.props.children.length; i++) {
     const element = fiber.props.children[i];
 
@@ -70,7 +83,7 @@ function performUnitOfWork(fiber) {
     if (i === 0) {
       fiber.firstChild = newFiber;
     } else {
-      prevSibling.sibling = newFiber;
+      prevSibling!.sibling = newFiber;
     }
 
     prevSibling = newFiber;
@@ -89,7 +102,7 @@ function performUnitOfWork(fiber) {
   }
 }
 
-let nextUnitOfWork = null;
+let nextUnitOfWork: Fiber | null = null;
 requestIdleCallback(workLoop);
 
 export { render, createElement }
